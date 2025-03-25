@@ -82,14 +82,14 @@ def init_session_state():
     if "evaluator_record" not in st.session_state:
         st.session_state.evaluator_record = None
 
-def save_evaluation(evaluator, evaluator_position, evaluation_data):
+def save_evaluation(evaluator, evaluator_position, evaluated, evaluation_data):
     """
-    Salva os dados da avaliação no arquivo 'responses.csv'.
-    Acrescenta informações do avaliador e o timestamp.
-    O registro contém a coluna 'avaliado' com o nome do avaliado.
+    Salva os dados da avaliação em 'responses.csv'.
+    Acrescenta informações do avaliador, do avaliado e o timestamp.
     """
     evaluation_data["evaluator"] = evaluator
     evaluation_data["evaluator_position"] = evaluator_position
+    evaluation_data["avaliado"] = evaluated
     evaluation_data["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     df = pd.DataFrame([evaluation_data])
@@ -98,3 +98,10 @@ def save_evaluation(evaluator, evaluator_position, evaluation_data):
         df.to_csv(csv_file, index=False, mode='w')
     else:
         df.to_csv(csv_file, index=False, mode='a', header=False)
+
+def clear_responses():
+    """Remove o arquivo de respostas (se existir) e limpa a session_state."""
+    csv_file = "responses.csv"
+    if os.path.exists(csv_file):
+        os.remove(csv_file)
+    st.session_state.responses_df = pd.DataFrame()
