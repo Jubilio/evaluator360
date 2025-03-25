@@ -1,0 +1,164 @@
+import streamlit as st
+from components import get_employees_data
+
+def evaluation_page():
+    st.title("Avaliação 360°")
+    st.markdown("""
+    **Please take a few minutes to complete this survey / Por favor, dedique alguns minutos para preencher este inquérito**
+
+    Esta é uma ferramenta essencial para fortalecer o desempenho individual e da equipa, promovendo um ambiente colaborativo e eficiente. Por meio do feedback dos colegas, identificamos pontos de melhoria, valorizamos contribuições e estimulamos o desenvolvimento profissional. Pedimos que as respostas sejam sinceras, imparciais e focadas no crescimento coletivo. Todas as informações serão tratadas com confidencialidade e utilizadas para aprimorar continuamente o nosso trabalho.
+
+    This is a key tool for strengthening individual and team performance, fostering a collaborative and efficient work environment. Through feedback from colleagues, we identify areas for improvement, recognize contributions, and encourage professional development.
+    """)
+    st.markdown("""
+    ### Instruções
+    **Passos:**
+    1. Digite parte do seu nome e selecione o resultado correto.
+    2. Se você tiver pelo menos 3 meses de trabalho, avalie cada colega (exceto você mesmo) respondendo às perguntas numeradas.
+
+    **Observações:**
+    - Funcionários com menos de 3 meses **não podem realizar a avaliação**.
+    - Se você for **Distribution Project Officer**, não poderá avaliar funcionários na posição **MEAL Officer** e vice-versa.
+    """)
+
+    df = get_employees_data()
+    
+    # Se não houver dados, encerra a página
+    if df.empty:
+        st.stop()
+
+    # Se o avaliador ainda não foi definido, permite que ele digite e escolha seu nome
+    if st.session_state.evaluator_selected is None:
+        st.subheader("Digite seu nome e selecione o resultado correto")
+        typed_name = st.text_input("Seu nome (busca parcial):", key="typed_name")
+        
+        matching_names = []
+        if typed_name.strip():
+            matching_names = [n for n in df["name"].unique() if typed_name.lower() in n.lower()]
+        
+        if matching_names:
+            selected_name = st.selectbox("Nomes encontrados:", matching_names, key="selected_name")
+        else:
+            selected_name = None
+        
+        confirmar_button = st.button("Confirmar")
+        if confirmar_button:
+            if not selected_name:
+                st.error("Nenhum nome correspondente. Verifique a grafia e tente novamente.")
+            else:
+                evaluator_record = df[df["name"] == selected_name].iloc[0]
+                st.session_state.evaluator_record = evaluator_record
+                st.session_state.evaluator_name = evaluator_record["name"]
+                st.session_state.evaluator_position = evaluator_record["position"]
+                st.session_state.evaluator_selected = True  # marca que o avaliador foi definido
+
+                if evaluator_record["months"] < 3:
+                    st.error("Não pode realizar a avaliação devido ao tempo de trabalho com os colegas.")
+                else:
+                    # Cria o DataFrame de avaliados (exclui o próprio avaliador)
+                    df_to_evaluate = df[df["name"] != evaluator_record["name"]].copy()
+                    # Normaliza a posição para comparação
+                    evaluator_position = evaluator_record["position"].strip().lower()
+                    df_to_evaluate["position_clean"] = df_to_evaluate["position"].apply(lambda x: x.strip().lower())
+                    if evaluator_position == "distribution project officer":
+                        df_to_evaluate = df_to_evaluate[df_to_evaluate["position_clean"] != "meal officer"]
+                    elif evaluator_position == "meal officer":
+                        df_to_evaluate = df_to_evaluate[df_to_evaluate["position_clean"] != "distribution project officer"]
+                    # Filtra apenas funcionários com pelo menos 3 meses
+                    df_to_evaluate = df_to_evaluate[df_to_evaluate["months"] >= 3].reset_index(drop=True)
+                    st.session_state.df_to_evaluate = df_to_evaluate
+                    st.session_state.current_index = 0  # Reinicia o índice de avaliação
+                    st.success("Avaliador definido. Prossiga para as avaliações.")
+
+    # Se o avaliador já estiver definido e carregado
+    if st.session_state.evaluator_selected is not None and "evaluator_record" in st.session_state:
+        evaluator_record = st.session_state.evaluator_record
+        if evaluator_record["months"] < 3:
+            st.error("Você não é elegível para realizar a avaliação, pois possui menos de 3 meses de trabalho com os colegas.")
+        else:
+            evaluator_name = st.session_state.evaluator_name
+            evaluator_position = st.session_state.evaluator_position
+            df_to_evaluate = st.session_state.df_to_evaluate
+            total_avaliacoes = len(df_to_evaluate)
+            st.markdown(f"**Você selecionou:** {evaluator_name} - {evaluator_position}")
+            st.markdown(f"**Total de colegas a avaliar:** {total_avaliacoes}")
+            
+            if st.session_state.current_index < total_avaliacoes:
+                current_row = df_to_evaluate.iloc[st.session_state.current_index]
+                col_id = current_row["id"]
+                st.markdown("---")
+                st.subheader(f"Avaliando: {current_row['name']} - {current_row['position']}")
+                with st.form(key=f"avaliacao_{col_id}"):
+                    st.markdown("**Perguntas:**")
+                    resposta = {}
+                    resposta["recomendacao"] = st.slider(
+                        "1. Qual é a probabilidade de recomendar esse(a) colega para uma atividade específica? (0 a 10)",
+                        min_value=0, max_value=10, value=5, key=f"recomendacao_{col_id}"
+                    )
+                    resposta["qualidade"] = st.radio(
+                        "2. Quão boa é a qualidade do trabalho deste colega?",
+                        options=["Excelente", "Muito Bom", "Bom", "Regular", "Ruim"],
+                        key=f"qualidade_{col_id}"
+                    )
+                    resposta["produtividade"] = st.slider(
+                        "3. Quão produtivo é este(a) colega de trabalho? (1 a 5)",
+                        min_value=1, max_value=5, value=3, key=f"produtividade_{col_id}"
+                    )
+                    resposta["trabalho_em_equipe"] = st.radio(
+                        "4. Quão bem trabalha esse(a) colega com os(as) outros(as)?",
+                        options=["Excelente", "Muito Bem", "Bem", "Regular", "Ruim"],
+                        key=f"trabalho_em_equipe_{col_id}"
+                    )
+                    resposta["proatividade"] = st.slider(
+                        "5. Quão proativo(a) é este(a) colega? (1 a 5)",
+                        min_value=1, max_value=5, value=3, key=f"proatividade_{col_id}"
+                    )
+                    resposta["resolucao"] = st.radio(
+                        "6. Quão bem este(a) colega resolve problemas de forma independente?",
+                        options=["Excelente", "Muito Bem", "Bem", "Regular", "Ruim"],
+                        key=f"resolucao_{col_id}"
+                    )
+                    resposta["criticas"] = st.slider(
+                        "7. Como este(a) colega lida com as críticas ao seu trabalho? (1 a 5)",
+                        min_value=1, max_value=5, value=3, key=f"criticas_{col_id}"
+                    )
+                    resposta["adaptabilidade"] = st.radio(
+                        "8. Quão bem se adapta este(a) colega às mudanças de prioridades?",
+                        options=["Excelente", "Muito Bem", "Bem", "Regular", "Ruim"],
+                        key=f"adaptabilidade_{col_id}"
+                    )
+                    resposta["pontos_positivos"] = st.text_area(
+                        "9. Liste as áreas em que este(a) colega apresenta bom desempenho. Seja específico.",
+                        key=f"pontos_positivos_{col_id}"
+                    )
+                    resposta["pontos_melhoria"] = st.text_area(
+                        "10. Liste as áreas que podem ser melhoradas para este(a) colega. Seja específico.",
+                        key=f"pontos_melhoria_{col_id}"
+                    )
+
+                    submit = st.form_submit_button("Next / Próximo")
+                    if submit:
+                        if not resposta["pontos_positivos"].strip() or not resposta["pontos_melhoria"].strip():
+                            st.error("Por favor, responda todas as perguntas. Os campos 'Pontos Positivos' e 'Áreas para Melhoria' são obrigatórios.")
+                        else:
+                            st.session_state.avaliacoes[col_id] = resposta
+                            st.session_state.current_index += 1
+                            st.success("Avaliação registrada!")
+            else:
+                st.success("Você completou todas as avaliações!")
+                st.markdown("### Resumo das Avaliações Realizadas")
+                for idx, row in df_to_evaluate.iterrows():
+                    col_id = row["id"]
+                    if col_id in st.session_state.avaliacoes:
+                        avaliacao = st.session_state.avaliacoes[col_id]
+                        st.markdown(f"#### {row['name']} - {row['position']}")
+                        st.write(f"**1. Recomendação (0 a 10):** {avaliacao['recomendacao']}")
+                        st.write(f"**2. Qualidade do trabalho:** {avaliacao['qualidade']}")
+                        st.write(f"**3. Produtividade (1 a 5):** {avaliacao['produtividade']}")
+                        st.write(f"**4. Trabalho em equipe:** {avaliacao['trabalho_em_equipe']}")
+                        st.write(f"**5. Proatividade (1 a 5):** {avaliacao['proatividade']}")
+                        st.write(f"**6. Resolução de problemas:** {avaliacao['resolucao']}")
+                        st.write(f"**7. Lidar com críticas (1 a 5):** {avaliacao['criticas']}")
+                        st.write(f"**8. Adaptação:** {avaliacao['adaptabilidade']}")
+                        st.write(f"**9. Pontos Positivos:** {avaliacao['pontos_positivos']}")
+                        st.write(f"**10. Áreas para Melhoria:** {avaliacao['pontos_melhoria']}")
