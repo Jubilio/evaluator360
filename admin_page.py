@@ -22,7 +22,7 @@ def admin_page():
     
     # Tenta carregar os dados persistentes do arquivo responses.csv
     csv_file = "responses.csv"
-    if not st.session_state.get("responses_df"):
+    if "responses_df" not in st.session_state:
         try:
             responses_df = pd.read_csv(csv_file)
             st.session_state.responses_df = responses_df
