@@ -3,7 +3,7 @@ from components import inject_css, load_sidebar_logo, init_session_state
 from evaluation_page import evaluation_page
 from admin_page import admin_page
 
-st.set_page_config(page_title="Avaliação 360°", layout="wide")  # Deve ser a primeira linha
+st.set_page_config(page_title="Avaliação 360°", layout="wide")
 
 # Inicializa as variáveis de sessão
 init_session_state()

@@ -1,5 +1,5 @@
 import streamlit as st
-from components import get_employees_data
+from components import get_employees_data, save_evaluation
 
 def evaluation_page():
     st.title("Avaliação 360°")
@@ -22,12 +22,10 @@ def evaluation_page():
     """)
 
     df = get_employees_data()
-    
-    # Se não houver dados, encerra a página
     if df.empty:
         st.stop()
 
-    # Se o avaliador ainda não foi definido, permite que ele digite e escolha seu nome
+    # Caso o avaliador ainda não tenha sido definido
     if st.session_state.evaluator_selected is None:
         st.subheader("Digite seu nome e selecione o resultado correto")
         typed_name = st.text_input("Seu nome (busca parcial):", key="typed_name")
@@ -50,27 +48,25 @@ def evaluation_page():
                 st.session_state.evaluator_record = evaluator_record
                 st.session_state.evaluator_name = evaluator_record["name"]
                 st.session_state.evaluator_position = evaluator_record["position"]
-                st.session_state.evaluator_selected = True  # marca que o avaliador foi definido
+                st.session_state.evaluator_selected = True
 
                 if evaluator_record["months"] < 3:
                     st.error("Não pode realizar a avaliação devido ao tempo de trabalho com os colegas.")
                 else:
                     # Cria o DataFrame de avaliados (exclui o próprio avaliador)
                     df_to_evaluate = df[df["name"] != evaluator_record["name"]].copy()
-                    # Normaliza a posição para comparação
-                    evaluator_position = evaluator_record["position"].strip().lower()
+                    evaluator_position_norm = evaluator_record["position"].strip().lower()
                     df_to_evaluate["position_clean"] = df_to_evaluate["position"].apply(lambda x: x.strip().lower())
-                    if evaluator_position == "distribution project officer":
+                    if evaluator_position_norm == "distribution project officer":
                         df_to_evaluate = df_to_evaluate[df_to_evaluate["position_clean"] != "meal officer"]
-                    elif evaluator_position == "meal officer":
+                    elif evaluator_position_norm == "meal officer":
                         df_to_evaluate = df_to_evaluate[df_to_evaluate["position_clean"] != "distribution project officer"]
-                    # Filtra apenas funcionários com pelo menos 3 meses
                     df_to_evaluate = df_to_evaluate[df_to_evaluate["months"] >= 3].reset_index(drop=True)
                     st.session_state.df_to_evaluate = df_to_evaluate
-                    st.session_state.current_index = 0  # Reinicia o índice de avaliação
+                    st.session_state.current_index = 0
                     st.success("Avaliador definido. Prossiga para as avaliações.")
 
-    # Se o avaliador já estiver definido e carregado
+    # Se o avaliador já foi definido
     if st.session_state.evaluator_selected is not None and "evaluator_record" in st.session_state:
         evaluator_record = st.session_state.evaluator_record
         if evaluator_record["months"] < 3:
@@ -135,12 +131,20 @@ def evaluation_page():
                         "10. Liste as áreas que podem ser melhoradas para este(a) colega. Seja específico.",
                         key=f"pontos_melhoria_{col_id}"
                     )
-
+                    
                     submit = st.form_submit_button("Next / Próximo")
                     if submit:
                         if not resposta["pontos_positivos"].strip() or not resposta["pontos_melhoria"].strip():
                             st.error("Por favor, responda todas as perguntas. Os campos 'Pontos Positivos' e 'Áreas para Melhoria' são obrigatórios.")
                         else:
+                            # Cria um registro incluindo o ID do avaliado e as respostas
+                            evaluation_record = {"avaliado_id": col_id, **resposta}
+                            from components import save_evaluation
+                            save_evaluation(
+                                evaluator=st.session_state.evaluator_name,
+                                evaluator_position=st.session_state.evaluator_position,
+                                evaluation_data=evaluation_record
+                            )
                             st.session_state.avaliacoes[col_id] = resposta
                             st.session_state.current_index += 1
                             st.success("Avaliação registrada!")

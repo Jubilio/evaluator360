@@ -13,62 +13,64 @@ def admin_page():
         st.stop()
     
     st.success("Acesso permitido!")
+    
+    # Exibe informações do avaliador, se disponíveis
+    if "evaluator_name" in st.session_state and "evaluator_position" in st.session_state:
+        st.markdown(f"### Avaliações realizadas por: **{st.session_state.evaluator_name} - {st.session_state.evaluator_position}**")
+    
     st.markdown("### Respostas das Avaliações")
     
-    if "avaliacoes" not in st.session_state or "df_to_evaluate" not in st.session_state:
-        st.warning("Nenhuma avaliação encontrada. Certifique-se de que as avaliações foram registradas na página de Avaliação.")
+    # Tenta carregar os dados persistentes do arquivo responses.csv
+    csv_file = "responses.csv"
+    if not st.session_state.get("responses_df"):
+        try:
+            responses_df = pd.read_csv(csv_file)
+            st.session_state.responses_df = responses_df
+        except Exception as e:
+            st.error(f"Erro ao carregar as respostas: {e}")
+            st.stop()
     else:
-        df_to_evaluate = st.session_state.df_to_evaluate.copy()
-        avaliacoes = st.session_state.avaliacoes
-        data_list = []
-        for idx, row in df_to_evaluate.iterrows():
-            col_id = row["id"]
-            if col_id in avaliacoes:
-                resposta = avaliacoes[col_id]
-                data_list.append({
-                    "Nome": row["name"],
-                    "Posição": row["position"],
-                    "Recomendação (0 a 10)": resposta.get("recomendacao"),
-                    "Qualidade": resposta.get("qualidade"),
-                    "Produtividade (1 a 5)": resposta.get("produtividade"),
-                    "Trabalho em Equipe": resposta.get("trabalho_em_equipe"),
-                    "Proatividade (1 a 5)": resposta.get("proatividade"),
-                    "Resolução de Problemas": resposta.get("resolucao"),
-                    "Lidar com Críticas (1 a 5)": resposta.get("criticas"),
-                    "Adaptação": resposta.get("adaptabilidade"),
-                    "Pontos Positivos": resposta.get("pontos_positivos"),
-                    "Áreas para Melhoria": resposta.get("pontos_melhoria")
-                })
-        if data_list:
-            df_respostas = pd.DataFrame(data_list)
-            st.dataframe(df_respostas, use_container_width=True)
-            
-            st.markdown("### Análises Gráficas")
-            chart_recomendacao = alt.Chart(df_respostas).mark_bar().encode(
-                x=alt.X("Recomendação (0 a 10):Q", bin=alt.Bin(maxbins=10), title="Recomendação (0 a 10)"),
-                y=alt.Y("count()", title="Contagem")
-            ).properties(title="Distribuição da Recomendação")
-            st.altair_chart(chart_recomendacao, use_container_width=True)
-            
-            chart_qualidade = alt.Chart(df_respostas).mark_bar().encode(
-                x=alt.X("Qualidade:N", title="Qualidade do Trabalho"),
-                y=alt.Y("count()", title="Contagem"),
-                color=alt.Color("Qualidade:N")
-            ).properties(title="Distribuição da Qualidade do Trabalho")
-            st.altair_chart(chart_qualidade, use_container_width=True)
-            
-            chart_produtividade = alt.Chart(df_respostas).mark_bar().encode(
-                x=alt.X("Produtividade (1 a 5):Q", bin=alt.Bin(maxbins=5), title="Produtividade (1 a 5)"),
-                y=alt.Y("count()", title="Contagem")
-            ).properties(title="Distribuição da Produtividade")
-            st.altair_chart(chart_produtividade, use_container_width=True)
-            
-            excel_data = to_excel(df_respostas)
-            st.download_button(
-                label="Baixar respostas em Excel",
-                data=excel_data,
-                file_name="avaliacoes.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-        else:
-            st.info("Nenhuma resposta registrada ainda.")
+        responses_df = st.session_state.responses_df
+
+    if responses_df.empty:
+        st.warning("Nenhuma avaliação encontrada.")
+    else:
+        st.dataframe(responses_df, use_container_width=True)
+        
+        # Cálculo das médias para campos numéricos
+        numeric_cols = ["recomendacao", "produtividade", "proatividade", "criticas"]
+        # Verifica se as colunas existem
+        existing_cols = [col for col in numeric_cols if col in responses_df.columns]
+        if existing_cols:
+            avg_df = responses_df[existing_cols].mean().reset_index()
+            avg_df.columns = ["Métrica", "Média"]
+            st.markdown("### Médias das Avaliações")
+            st.table(avg_df)
+        
+        st.markdown("### Análises Gráficas")
+        chart_recomendacao = alt.Chart(responses_df).mark_bar().encode(
+            x=alt.X("recomendacao:Q", bin=alt.Bin(maxbins=10), title="Recomendação (0 a 10)"),
+            y=alt.Y("count()", title="Contagem")
+        ).properties(title="Distribuição da Recomendação")
+        st.altair_chart(chart_recomendacao, use_container_width=True)
+        
+        chart_qualidade = alt.Chart(responses_df).mark_bar().encode(
+            x=alt.X("qualidade:N", title="Qualidade do Trabalho"),
+            y=alt.Y("count()", title="Contagem"),
+            color=alt.Color("qualidade:N")
+        ).properties(title="Distribuição da Qualidade do Trabalho")
+        st.altair_chart(chart_qualidade, use_container_width=True)
+        
+        chart_produtividade = alt.Chart(responses_df).mark_bar().encode(
+            x=alt.X("produtividade:Q", bin=alt.Bin(maxbins=5), title="Produtividade (1 a 5)"),
+            y=alt.Y("count()", title="Contagem")
+        ).properties(title="Distribuição da Produtividade")
+        st.altair_chart(chart_produtividade, use_container_width=True)
+        
+        excel_data = to_excel(responses_df)
+        st.download_button(
+            label="Baixar respostas em Excel",
+            data=excel_data,
+            file_name="avaliacoes.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )

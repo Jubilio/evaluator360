@@ -3,22 +3,22 @@ import pandas as pd
 from io import BytesIO
 import altair as alt
 import os
+from datetime import datetime
 
-# Injeta CSS customizado (fundo branco e cores definidas)
 def inject_css():
     custom_css = """
     <style>
     :root {
-        --primary-color: R27-V20-B100;
-        --secondary-color-1: R75-V178-B114;
-        --secondary-color-2: R84-V84-B84;
+        --primary-color: #4bb272;
+        --secondary-color-1: #545454;
+        --secondary-color-2: #1b1464;
     }
     body {
         background-color: white !important;
         font-family: 'Segoe UI', sans-serif;
     }
     .block-container {
-        background-color: grey;
+        background-color: white;
     }
     h1, h2, h3, h4 {
         color: var(--secondary-color-2);
@@ -42,7 +42,6 @@ def inject_css():
     """
     st.markdown(custom_css, unsafe_allow_html=True)
 
-# Carrega o logo na sidebar
 def load_sidebar_logo(path="acted.png", width=200):
     if os.path.exists(path):
         st.sidebar.image(path, width=width)
@@ -52,7 +51,6 @@ def load_sidebar_logo(path="acted.png", width=200):
             unsafe_allow_html=True
         )
 
-# Converte um DataFrame em arquivo Excel
 def to_excel(df: pd.DataFrame) -> bytes:
     output = BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
@@ -60,20 +58,12 @@ def to_excel(df: pd.DataFrame) -> bytes:
     writer.close()
     return output.getvalue()
 
-# Carrega os dados dos funcionários a partir de um CSV
-import os
-import pandas as pd
-import streamlit as st
-
 def get_employees_data() -> pd.DataFrame:
     csv_path = "employees.csv"
     if os.path.exists(csv_path):
         try:
-            # Carrega o CSV, ignorando espaços iniciais
             df = pd.read_csv(csv_path, skipinitialspace=True)
-            # Remove espaços dos cabeçalhos e converte para minúsculas
             df.columns = df.columns.str.strip().str.lower()
-            # Agora o CSV deve conter as colunas: id, name, position, months
             return df
         except Exception as e:
             st.error(f"Erro ao carregar o CSV: {e}")
@@ -82,7 +72,6 @@ def get_employees_data() -> pd.DataFrame:
         st.error("Arquivo 'employees.csv' não encontrado. Coloque o arquivo na pasta do app.")
         return pd.DataFrame([])
 
-# Inicializa as variáveis de sessão necessárias
 def init_session_state():
     if "current_index" not in st.session_state:
         st.session_state.current_index = 0
@@ -92,3 +81,19 @@ def init_session_state():
         st.session_state.evaluator_selected = None
     if "evaluator_record" not in st.session_state:
         st.session_state.evaluator_record = None
+
+def save_evaluation(evaluator, evaluator_position, evaluation_data):
+    """
+    Salva os dados da avaliação no arquivo 'responses.csv'.
+    Acrescenta informações do avaliador e o timestamp.
+    """
+    evaluation_data["evaluator"] = evaluator
+    evaluation_data["evaluator_position"] = evaluator_position
+    evaluation_data["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    df = pd.DataFrame([evaluation_data])
+    csv_file = "responses.csv"
+    if not os.path.exists(csv_file):
+        df.to_csv(csv_file, index=False, mode='w')
+    else:
+        df.to_csv(csv_file, index=False, mode='a', header=False)
