@@ -33,7 +33,6 @@ logs/
 # Ignore datasets
 data/
 dataset/
-*.csv
 *.json
 *.tfrecord
 *.zip
