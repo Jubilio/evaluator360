@@ -12,7 +12,7 @@ init_session_state()
 inject_css()
 
 # Carrega o logo na sidebar
-load_sidebar_logo("acted.png", 200)
+load_sidebar_logo("acted.png", 300)
 
 # Navegação na sidebar
 page = st.sidebar.radio("Menu", options=["Avaliação", "Dashboard Admin"])

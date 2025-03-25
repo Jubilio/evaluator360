@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 from components import to_excel
+import os
 
 def admin_page():
     st.title("Dashboard Administrativo")
@@ -14,24 +15,25 @@ def admin_page():
     
     st.success("Acesso permitido!")
     
-    # Exibe informações do avaliador, se disponíveis
-    if "evaluator_name" in st.session_state and "evaluator_position" in st.session_state:
-        st.markdown(f"### Avaliações realizadas por: **{st.session_state.evaluator_name} - {st.session_state.evaluator_position}**")
+    # Botão para limpar os dados (remover o arquivo responses.csv)
+    if st.button("Limpar Dados (apenas para testes)"):
+        csv_file = "responses.csv"
+        if os.path.exists(csv_file):
+            os.remove(csv_file)
+            st.success("Dados removidos com sucesso!")
+            st.session_state.responses_df = pd.DataFrame()
+        else:
+            st.info("Nenhum dado encontrado para remover.")
     
     st.markdown("### Respostas das Avaliações")
     
-    # Tenta carregar os dados persistentes do arquivo responses.csv
     csv_file = "responses.csv"
-    if "responses_df" not in st.session_state:
-        try:
-            responses_df = pd.read_csv(csv_file)
-            st.session_state.responses_df = responses_df
-        except Exception as e:
-            st.error(f"Erro ao carregar as respostas: {e}")
-            st.stop()
-    else:
-        responses_df = st.session_state.responses_df
-
+    try:
+        responses_df = pd.read_csv(csv_file)
+    except Exception as e:
+        st.error(f"Erro ao carregar as respostas: {e}")
+        st.stop()
+    
     if responses_df.empty:
         st.warning("Nenhuma avaliação encontrada.")
     else:
@@ -39,7 +41,6 @@ def admin_page():
         
         # Cálculo das médias para campos numéricos
         numeric_cols = ["recomendacao", "produtividade", "proatividade", "criticas"]
-        # Verifica se as colunas existem
         existing_cols = [col for col in numeric_cols if col in responses_df.columns]
         if existing_cols:
             avg_df = responses_df[existing_cols].mean().reset_index()

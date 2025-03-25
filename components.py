@@ -86,6 +86,7 @@ def save_evaluation(evaluator, evaluator_position, evaluation_data):
     """
     Salva os dados da avaliação no arquivo 'responses.csv'.
     Acrescenta informações do avaliador e o timestamp.
+    O registro contém a coluna 'avaliado' com o nome do avaliado.
     """
     evaluation_data["evaluator"] = evaluator
     evaluation_data["evaluator_position"] = evaluator_position
