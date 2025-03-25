@@ -14,13 +14,12 @@ def admin_page():
     
     st.success("Acesso permitido!")
     
-    # Exibe informações do avaliador (se disponível)
+    # Exibe informações do avaliador, se disponíveis
     if "evaluator_name" in st.session_state and "evaluator_position" in st.session_state:
         st.markdown(f"### Avaliações realizadas por: **{st.session_state.evaluator_name} - {st.session_state.evaluator_position}**")
     
     # Botão para limpar os dados (ex: para testes)
     if st.button("Remover dados de teste"):
-        from components import clear_responses
         clear_responses()
         st.success("Dados removidos com sucesso.")
     

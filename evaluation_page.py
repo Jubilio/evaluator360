@@ -53,6 +53,7 @@ def evaluation_page():
                 if evaluator_record["months"] < 3:
                     st.error("Não pode realizar a avaliação devido ao tempo de trabalho com os colegas.")
                 else:
+                    # Cria o DataFrame de avaliados (exclui o próprio avaliador)
                     df_to_evaluate = df[df["name"] != evaluator_record["name"]].copy()
                     evaluator_position_norm = evaluator_record["position"].strip().lower()
                     df_to_evaluate["position_clean"] = df_to_evaluate["position"].apply(lambda x: x.strip().lower())
@@ -65,7 +66,7 @@ def evaluation_page():
                     st.session_state.current_index = 0
                     st.success("Avaliador definido. Prossiga para as avaliações.")
 
-    # Se o avaliador já estiver definido
+    # Se o avaliador já foi definido
     if st.session_state.evaluator_selected is not None and "evaluator_record" in st.session_state:
         evaluator_record = st.session_state.evaluator_record
         if evaluator_record["months"] < 3:
@@ -80,7 +81,7 @@ def evaluation_page():
             
             if st.session_state.current_index < total_avaliacoes:
                 current_row = df_to_evaluate.iloc[st.session_state.current_index]
-                evaluated_name = current_row["name"]  # Nome do avaliado
+                evaluated_name = current_row["name"]
                 st.markdown("---")
                 st.subheader(f"Avaliando: {evaluated_name} - {current_row['position']}")
                 with st.form(key=f"avaliacao_{evaluated_name}"):
