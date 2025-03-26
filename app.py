@@ -6,7 +6,7 @@ from admin_page import admin_page
 st.set_page_config(page_title="Avaliação 360°", layout="wide")
 init_session_state()
 inject_css()
-load_sidebar_logo("acted.png", 350)
+load_sidebar_logo("acted.png", 200)
 
 page = st.sidebar.radio("Menu", options=["Avaliação", "Dashboard Admin"])
 

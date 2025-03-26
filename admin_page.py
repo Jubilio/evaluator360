@@ -3,6 +3,29 @@ import pandas as pd
 import altair as alt
 from components import to_excel, clear_responses, get_evaluations_db
 
+def suggest_mentors(variable: str, responses_df: pd.DataFrame, top_n: int = 3):
+    """
+    Para a variável escolhida, agrupa as avaliações por 'avaliado', calcula a média,
+    e identifica quais avaliados estão abaixo da média geral.
+    Para cada um deles, sugere os top_n avaliados com melhores médias na mesma variável.
+    Retorna um dicionário de sugestões e a média geral.
+    """
+    # Agrupa os dados por 'avaliado' e calcula a média da variável
+    grouped = responses_df.groupby("avaliado")[variable].mean().reset_index()
+    overall_avg = grouped[variable].mean()
+    # Avaliados com desempenho abaixo da média geral
+    low_perf = grouped[grouped[variable] < overall_avg]
+    # Potenciais mentores: avaliados com média acima ou igual à média geral
+    high_perf = grouped[grouped[variable] >= overall_avg].sort_values(by=variable, ascending=False)
+    
+    suggestions = {}
+    for _, row in low_perf.iterrows():
+        evaluated = row["avaliado"]
+        # Sugere os top_n com melhores médias (excluindo o próprio avaliado)
+        mentors = high_perf[high_perf["avaliado"] != evaluated].head(top_n)
+        suggestions[evaluated] = mentors
+    return suggestions, overall_avg
+
 def admin_page():
     st.title("Dashboard Administrativo")
     st.markdown("Esta página é restrita. Informe a senha de acesso.")
@@ -14,7 +37,7 @@ def admin_page():
     
     st.success("Acesso permitido!")
     
-    # Exibe informações do avaliador, se disponíveis
+    # Exibe informações do avaliador (se disponíveis)
     if "evaluator_name" in st.session_state and "evaluator_position" in st.session_state:
         st.markdown(f"### Avaliações realizadas por: **{st.session_state.evaluator_name} - {st.session_state.evaluator_position}**")
     
@@ -25,7 +48,7 @@ def admin_page():
     
     st.markdown("### Respostas das Avaliações")
     
-    # Carrega os dados das avaliações do banco de dados SQLite
+    # Carrega os dados das avaliações do banco de dados
     responses_df = get_evaluations_db()
     if responses_df.empty:
         st.warning("Nenhuma avaliação encontrada.")
@@ -59,6 +82,20 @@ def admin_page():
             y=alt.Y("count()", title="Contagem")
         ).properties(title="Distribuição da Produtividade")
         st.altair_chart(chart_produtividade, use_container_width=True)
+        
+        # Nova seção: Sugestão de Mentores
+        st.markdown("### Sugestão de Mentores")
+        # Permite ao administrador escolher uma variável para análise
+        var_options = ["produtividade", "proatividade", "recomendacao", "criticas"]
+        variable = st.selectbox("Selecione a variável para análise de mentoria:", var_options, key="mentor_var")
+        suggestions, overall_avg = suggest_mentors(variable, responses_df, top_n=3)
+        st.write(f"Média geral de **{variable}**: {overall_avg:.2f}")
+        for evaluated, mentors_df in suggestions.items():
+            st.markdown(f"**{evaluated}**:")
+            if mentors_df.empty:
+                st.write("Nenhum mentor sugerido.")
+            else:
+                st.write(mentors_df)
         
         excel_data = to_excel(responses_df)
         st.download_button(
