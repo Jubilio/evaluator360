@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-from components import to_excel, clear_responses
+from components import to_excel, clear_responses, get_evaluations_db
 
 def admin_page():
     st.title("Dashboard Administrativo")
@@ -25,13 +25,8 @@ def admin_page():
     
     st.markdown("### Respostas das Avaliações")
     
-    csv_file = "responses.csv"
-    try:
-        responses_df = pd.read_csv(csv_file)
-    except Exception as e:
-        st.error(f"Erro ao carregar as respostas: {e}")
-        st.stop()
-
+    # Carrega os dados das avaliações do banco de dados SQLite
+    responses_df = get_evaluations_db()
     if responses_df.empty:
         st.warning("Nenhuma avaliação encontrada.")
     else:

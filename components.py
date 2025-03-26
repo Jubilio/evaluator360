@@ -3,7 +3,42 @@ import pandas as pd
 from io import BytesIO
 import altair as alt
 import os
+import sqlite3
 from datetime import datetime
+
+# Configuração de logging (opcional)
+import logging
+logging.basicConfig(level=logging.INFO)
+
+DB_FILE = "evaluations.db"
+
+def create_db():
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS evaluations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            evaluator TEXT,
+            evaluator_position TEXT,
+            evaluated TEXT,
+            recomendacao INTEGER,
+            qualidade TEXT,
+            produtividade INTEGER,
+            trabalho_em_equipe TEXT,
+            proatividade INTEGER,
+            resolucao TEXT,
+            criticas INTEGER,
+            adaptabilidade TEXT,
+            pontos_positivos TEXT,
+            pontos_melhoria TEXT,
+            timestamp TEXT
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+# Cria o banco de dados na primeira execução
+create_db()
 
 def inject_css():
     custom_css = """
@@ -58,6 +93,7 @@ def to_excel(df: pd.DataFrame) -> bytes:
     writer.close()
     return output.getvalue()
 
+@st.cache_data
 def get_employees_data() -> pd.DataFrame:
     csv_path = "employees.csv"
     if os.path.exists(csv_path):
@@ -82,26 +118,48 @@ def init_session_state():
     if "evaluator_record" not in st.session_state:
         st.session_state.evaluator_record = None
 
-def save_evaluation(evaluator, evaluator_position, evaluated, evaluation_data):
+def save_evaluation_db(evaluator, evaluator_position, evaluated, evaluation_data):
     """
-    Salva os dados da avaliação no arquivo 'responses.csv'.
-    Acrescenta o nome do avaliador, sua posição, o nome do avaliado e o timestamp.
+    Salva os dados da avaliação no banco de dados SQLite.
     """
-    evaluation_data["evaluator"] = evaluator
-    evaluation_data["evaluator_position"] = evaluator_position
-    evaluation_data["avaliado"] = evaluated
-    evaluation_data["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    # Extrai os valores do dicionário
+    recomendacao = evaluation_data.get("recomendacao")
+    qualidade = evaluation_data.get("qualidade")
+    produtividade = evaluation_data.get("produtividade")
+    trabalho_em_equipe = evaluation_data.get("trabalho_em_equipe")
+    proatividade = evaluation_data.get("proatividade")
+    resolucao = evaluation_data.get("resolucao")
+    criticas = evaluation_data.get("criticas")
+    adaptabilidade = evaluation_data.get("adaptabilidade")
+    pontos_positivos = evaluation_data.get("pontos_positivos")
+    pontos_melhoria = evaluation_data.get("pontos_melhoria")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    df = pd.DataFrame([evaluation_data])
-    csv_file = "responses.csv"
-    if not os.path.exists(csv_file):
-        df.to_csv(csv_file, index=False, mode='w')
-    else:
-        df.to_csv(csv_file, index=False, mode='a', header=False)
+    cursor.execute("""
+        INSERT INTO evaluations (
+            evaluator, evaluator_position, evaluated, recomendacao, qualidade, produtividade,
+            trabalho_em_equipe, proatividade, resolucao, criticas, adaptabilidade,
+            pontos_positivos, pontos_melhoria, timestamp
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (evaluator, evaluator_position, evaluated, recomendacao, qualidade, produtividade,
+          trabalho_em_equipe, proatividade, resolucao, criticas, adaptabilidade,
+          pontos_positivos, pontos_melhoria, timestamp))
+    conn.commit()
+    conn.close()
+
+def get_evaluations_db() -> pd.DataFrame:
+    conn = sqlite3.connect(DB_FILE)
+    df = pd.read_sql_query("SELECT * FROM evaluations", conn)
+    conn.close()
+    return df
 
 def clear_responses():
-    """Remove o arquivo de respostas (se existir) e limpa a variável de sessão."""
-    csv_file = "responses.csv"
-    if os.path.exists(csv_file):
-        os.remove(csv_file)
+    """Remove os dados do banco de dados (para testes)"""
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM evaluations")
+    conn.commit()
+    conn.close()
     st.session_state.responses_df = pd.DataFrame()
