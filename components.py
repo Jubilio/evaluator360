@@ -6,10 +6,6 @@ import os
 import sqlite3
 from datetime import datetime
 
-# Configuração de logging (opcional)
-import logging
-logging.basicConfig(level=logging.INFO)
-
 DB_FILE = "evaluations.db"
 
 def create_db():
@@ -37,7 +33,6 @@ def create_db():
     conn.commit()
     conn.close()
 
-# Cria o banco de dados na primeira execução
 create_db()
 
 def inject_css():
@@ -77,7 +72,7 @@ def inject_css():
     """
     st.markdown(custom_css, unsafe_allow_html=True)
 
-def load_sidebar_logo(path="acted.png", width=200):
+def load_sidebar_logo(path="logo.png", width=200):
     if os.path.exists(path):
         st.sidebar.image(path, width=width)
     else:
@@ -124,7 +119,6 @@ def save_evaluation_db(evaluator, evaluator_position, evaluated, evaluation_data
     """
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    # Extrai os valores do dicionário
     recomendacao = evaluation_data.get("recomendacao")
     qualidade = evaluation_data.get("qualidade")
     produtividade = evaluation_data.get("produtividade")
@@ -162,4 +156,3 @@ def clear_responses():
     cursor.execute("DELETE FROM evaluations")
     conn.commit()
     conn.close()
-    st.session_state.responses_df = pd.DataFrame()

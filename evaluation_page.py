@@ -65,6 +65,7 @@ def evaluation_page():
                     st.session_state.current_index = 0
                     st.success("Avaliador definido. Prossiga para as avaliações.")
 
+    # Se o avaliador já foi definido
     if st.session_state.evaluator_selected is not None and "evaluator_record" in st.session_state:
         evaluator_record = st.session_state.evaluator_record
         if evaluator_record["months"] < 3:
@@ -135,7 +136,7 @@ def evaluation_page():
                         if not resposta["pontos_positivos"].strip() or not resposta["pontos_melhoria"].strip():
                             st.error("Por favor, responda todas as perguntas. Os campos 'Pontos Positivos' e 'Áreas para Melhoria' são obrigatórios.")
                         else:
-                            evaluation_record = {"avaliado": evaluated_name, **resposta}
+                            evaluation_record = {"evaluated": evaluated_name, **resposta}
                             from components import save_evaluation_db
                             save_evaluation_db(
                                 evaluator=st.session_state.evaluator_name,
