@@ -35,8 +35,8 @@ def create_db():
 
 create_db()
 
-def inject_css():
-    custom_css = """
+def inject_light_theme():
+    light_css = """
     <style>
     :root {
         --primary-color: #4bb272;
@@ -45,6 +45,7 @@ def inject_css():
     }
     body {
         background-color: white !important;
+        color: black;
         font-family: 'Segoe UI', sans-serif;
     }
     .block-container {
@@ -58,11 +59,45 @@ def inject_css():
         color: white;
         border: none;
     }
-    .stTextInput>div>input {
-        border: 2px solid var(--primary-color);
-    }
     .sidebar .sidebar-content {
         background-color: var(--secondary-color-1);
+        color: white;
+    }
+    </style>
+    """
+    st.markdown(light_css, unsafe_allow_html=True)
+
+def inject_dark_theme():
+    dark_css = """
+    <style>
+    :root {
+        --primary-color: #4bb272;
+        --secondary-color-1: #545454;
+        --secondary-color-2: #1b1464;
+    }
+    body {
+        background-color: #333333 !important;
+        color: white;
+        font-family: 'Segoe UI', sans-serif;
+    }
+    .block-container {
+        background-color: #444444;
+    }
+    h1, h2, h3, h4 {
+        color: var(--primary-color);
+    }
+    .stButton>button {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+    }
+    .stTextInput>div>input {
+        border: 2px solid var(--primary-color);
+        background-color: #555555;
+        color: white;
+    }
+    .sidebar .sidebar-content {
+        background-color: #222222;
         color: white;
     }
     .sidebar .sidebar-content a {
@@ -70,9 +105,10 @@ def inject_css():
     }
     </style>
     """
-    st.markdown(custom_css, unsafe_allow_html=True)
+    st.markdown(dark_css, unsafe_allow_html=True)
 
-def load_sidebar_logo(path="logo.png", width=200):
+
+def load_sidebar_logo(path="acted.png", width=200):
     if os.path.exists(path):
         st.sidebar.image(path, width=width)
     else:
