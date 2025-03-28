@@ -8,6 +8,12 @@ init_session_state()
 inject_css()
 load_sidebar_logo("acted.png", 200)
 
+# Seleção de idioma na sidebar (default: Português)
+if "language" not in st.session_state:
+    st.session_state.language = "Português"
+
+st.session_state.language = st.sidebar.selectbox("Selecione o idioma", ["Português", "English"], key="language_select")
+
 page = st.sidebar.radio("Menu", options=["Avaliação", "Dashboard Admin"])
 
 if page == "Avaliação":

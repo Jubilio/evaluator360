@@ -35,7 +35,7 @@ def admin_page():
     if "evaluator_name" in st.session_state and "evaluator_position" in st.session_state:
         st.markdown(f"### Avaliações realizadas por: **{st.session_state.evaluator_name} - {st.session_state.evaluator_position}**")
     
-    # Botão para limpar os dados (ex: para testes)
+    # Botão para limpar os dados (para testes)
     if st.button("Remover dados de teste"):
         clear_responses()
         st.success("Dados removidos com sucesso.")
