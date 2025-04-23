@@ -35,17 +35,19 @@ Esta é uma ferramenta chave para fortalecer o desempenho individual e da equipe
         "q2": "2. Quão boa é a qualidade do trabalho deste colega?",
         "q3": "3. Quão produtivo é este(a) colega de trabalho? (1 a 5)",
         "q4": "4. Quão bem trabalha esse(a) colega com os(as) outros(as)?",
-        "q5": "5. Quão proativo é este(a) colega? (1 a 5)",
-        "q6": "6. Quão bem este(a) colega resolve problemas de forma independente?",
-        "q7": "7. Como este(a) colega lida com as críticas ao seu trabalho? (1 a 5)",
-        "q8": "8. Quão bem se adapta este(a) colega às mudanças de prioridades?",
-        "q9": "9. Liste as áreas em que este(a) colega apresenta bom desempenho. Seja específico.",
-        "q10": "10. Liste as áreas que podem ser melhoradas para este(a) colega. Seja específico.",
-        # Novas questões
-        "q11": "11. Como você avalia a capacidade de comunicação deste colega? (1 a 5)",
-        "q12": "12. Como você avalia a iniciativa deste colega para propor melhorias? (1 a 5)",
+        "q5": "5. Quão proativo(a) é este(a) colega? (1 a 5)",
+        # Substituídas por novas descrições
+        "q6": "6. Adaptabilidade: Como avalia a capacidade deste(a) colega para se adaptar a mudanças, imprevistos ou novos contextos de trabalho? (1 a 5)",
+        "q7": "7. Autonomia: Em que medida este(a) colega demonstra iniciativa e capacidade para trabalhar de forma autónoma, sem necessidade de supervisão constante? (1 a 5)",
+        "q8": "8. Trabalho em equipa e gestão de equipa: Como descreve a capacidade deste(a) colega para colaborar com colegas e, se aplicável, liderar e motivar a sua equipa? (1 a 5)",
+        "q9": "9. Operacionalização: Este(a) colega consegue transformar planos e orientações em ações concretas de forma eficiente? (1 a 5)",
+        "q10": "10. Comunicação eficaz: Em que medida este(a) colega comunica de forma clara, respeitosa e apropriada com colegas, parceiros e outras partes interessadas? (1 a 5)",
+        # Mantém iniciativa como questão adicional
+        "q11": "11. Como você avalia a iniciativa deste colega para propor melhorias? (1 a 5)",
+        "q12": "12. Liste as áreas em que este(a) colega apresenta bom desempenho. Seja específico.",
+        "q13": "13. Liste as áreas que podem ser melhoradas para este(a) colega. Seja específico.",
         "submit": "Next / Próximo",
-        "fill_required": "Por favor, responda todas as perguntas. Os campos 'Pontos Positivos' e 'Áreas para Melhoria' são obrigatórios.",
+        "fill_required": "Por favor, responda todas as perguntas obrigatórias.",
         "evaluation_success": "Avaliação registrada!"
     },
     "English": {
@@ -53,8 +55,6 @@ Esta é uma ferramenta chave para fortalecer o desempenho individual e da equipe
 **Please take a few minutes to complete this survey**
 
 This tool is essential to strengthen individual and team performance, fostering a collaborative and efficient work environment. Through colleague feedback, we identify areas for improvement, value contributions, and encourage professional development. We ask that responses be honest, impartial, and focused on collective growth. All information will be kept confidential and used to continuously improve our work.
-
-This is a key tool for strengthening individual and team performance, fostering a collaborative and efficient work environment.
         """,
         "instructions": """
 ### Instructions
@@ -81,181 +81,113 @@ This is a key tool for strengthening individual and team performance, fostering 
         "q3": "3. How productive is this colleague? (1 to 5)",
         "q4": "4. How well does this colleague work with others?",
         "q5": "5. How proactive is this colleague? (1 to 5)",
-        "q6": "6. How well does this colleague solve problems independently?",
-        "q7": "7. How does this colleague handle criticism of their work? (1 to 5)",
-        "q8": "8. How well does this colleague adapt to changing priorities?",
-        "q9": "9. List the areas in which this colleague performs well. Be specific.",
-        "q10": "10. List the areas that could be improved for this colleague. Be specific.",
-        # Additional questions
-        "q11": "11. How would you rate this colleague's communication skills? (1 to 5)",
-        "q12": "12. How would you rate this colleague's initiative in proposing improvements? (1 to 5)",
+        # New descriptive variables
+        "q6": "6. Adaptability: How do you rate this colleague's ability to adapt to changes, unexpected events or new work contexts? (1 to 5)",
+        "q7": "7. Autonomy: To what extent does this colleague demonstrate initiative and capability to work independently without constant supervision? (1 to 5)",
+        "q8": "8. Teamwork and team management: How would you describe this colleague's ability to collaborate with coworkers and, when applicable, lead and motivate their team? (1 to 5)",
+        "q9": "9. Operationalization: Does this colleague effectively turn plans and guidelines into concrete actions efficiently? (1 to 5)",
+        "q10": "10. Effective communication: To what extent does this colleague communicate clearly, respectfully and appropriately with colleagues, partners and other stakeholders? (1 to 5)",
+        # Additional initiative question
+        "q11": "11. How would you rate this colleague's initiative in proposing improvements? (1 to 5)",
+        "q12": "12. List the areas in which this colleague performs well. Be specific.",
+        "q13": "13. List the areas that could be improved for this colleague. Be specific.",
         "submit": "Next / Next",
-        "fill_required": "Please answer all questions. The 'Positive Points' and 'Areas for Improvement' fields are required.",
+        "fill_required": "Please answer all required questions.",
         "evaluation_success": "Evaluation recorded!"
     }
 }
 
 def evaluation_page():
-    # Escolhe o idioma com base no session_state (configurado no app.py)
     language = st.session_state.get("language", "Português")
-    t = texts[language]  # Alias para facilitar
-    
+    t = texts[language]
+
     st.title("Avaliação 360°")
     st.markdown(t["intro"])
     st.markdown(t["instructions"])
-    
+
     df = get_employees_data()
     if df.empty:
         st.stop()
-    
-    # Caso o avaliador ainda não tenha sido definido
-    if st.session_state.evaluator_selected is None:
+
+    if st.session_state.get("evaluator_selected") is None:
         st.subheader(t["name_input"])
         typed_name = st.text_input(t["name_input"], key="typed_name")
-        
-        matching_names = []
-        if typed_name.strip():
-            matching_names = [n for n in df["name"].unique() if typed_name.lower() in n.lower()]
-        
-        if matching_names:
-            selected_name = st.selectbox("Matching Names:", matching_names, key="selected_name")
-        else:
-            selected_name = None
-        
-        confirmar_button = st.button(t["confirm"])
-        if confirmar_button:
-            if not selected_name:
+        matching = [n for n in df["name"].unique() if typed_name.lower() in n.lower()] if typed_name.strip() else []
+        selected = st.selectbox("", matching, key="selected_name") if matching else None
+        if st.button(t["confirm"]):
+            if not selected:
                 st.error(t["no_match"])
             else:
-                evaluator_record = df[df["name"] == selected_name].iloc[0]
-                st.session_state.evaluator_record = evaluator_record
-                st.session_state.evaluator_name = evaluator_record["name"]
-                st.session_state.evaluator_position = evaluator_record["position"]
+                rec = df[df["name"] == selected].iloc[0]
+                st.session_state.evaluator_record = rec
+                st.session_state.evaluator_name = rec["name"]
+                st.session_state.evaluator_position = rec["position"]
                 st.session_state.evaluator_selected = True
-
-                if evaluator_record["months"] < 3:
+                if rec["months"] < 2:
                     st.error(t["not_eligible"])
                 else:
-                    df_to_evaluate = df[df["name"] != evaluator_record["name"]].copy()
-                    evaluator_position_norm = evaluator_record["position"].strip().lower()
-                    df_to_evaluate["position_clean"] = df_to_evaluate["position"].apply(lambda x: x.strip().lower())
-                    if evaluator_position_norm == "distribution project officer":
-                        df_to_evaluate = df_to_evaluate[df_to_evaluate["position_clean"] != "meal officer"]
-                    elif evaluator_position_norm == "meal officer":
-                        df_to_evaluate = df_to_evaluate[df_to_evaluate["position_clean"] != "distribution project officer"]
-                    df_to_evaluate = df_to_evaluate[df_to_evaluate["months"] >= 3].reset_index(drop=True)
-                    st.session_state.df_to_evaluate = df_to_evaluate
+                    ev = rec["position"].strip().lower()
+                    de = df[df["name"] != rec["name"]].copy()
+                    de["pos_clean"] = de["position"].str.strip().str.lower()
+                    if ev == "distribution project officer":
+                        de = de[de["pos_clean"] != "meal officer"]
+                    elif ev == "meal officer":
+                        de = de[de["pos_clean"] != "distribution project officer"]
+                    de = de[de["months"] >= 2].reset_index(drop=True)
+                    st.session_state.df_to_evaluate = de
                     st.session_state.current_index = 0
-                    st.success(t["evaluator_defined"])
+                    st.success(t["evaluator_defined"]
+                    )
 
-    # Se o avaliador já foi definido
-    if st.session_state.evaluator_selected is not None and "evaluator_record" in st.session_state:
-        evaluator_record = st.session_state.evaluator_record
-        if evaluator_record["months"] < 3:
+    if st.session_state.get("evaluator_selected"):
+        rec = st.session_state.evaluator_record
+        if rec["months"] < 2:
             st.error(t["not_eligible"])
+            return
+        df2 = st.session_state.df_to_evaluate
+        st.markdown(f"**{t['you_selected']}** {st.session_state.evaluator_name} - {st.session_state.evaluator_position}")
+        st.markdown(f"**{t['total_to_evaluate']}** {len(df2)}")
+        idx = st.session_state.current_index
+        if idx < len(df2):
+            row = df2.iloc[idx]
+            name = row["name"]
+            st.markdown("---")
+            st.subheader(f"{t['evaluating']} {name} - {row['position']}")
+            with st.form(key=f"form_{name}"):
+                ans = {}
+                ans['recomendacao'] = st.slider(t['q1'], 0, 10, 5, key=f"rec_{name}")
+                ans['qualidade'] = st.radio(t['q2'], ["Excelente","Muito Bom","Bom","Regular","Ruim"], key=f"qual_{name}")
+                ans['produtividade'] = st.slider(t['q3'], 1, 5, 3, key=f"prod_{name}")
+                ans['trabalho_equipa'] = st.radio(t['q4'], ["Excelente","Muito Bom","Bom","Regular","Ruim"], key=f"team_{name}")
+                ans['proatividade'] = st.slider(t['q5'], 1, 5, 3, key=f"proativo_{name}")
+                ans['adaptabilidade'] = st.slider(t['q6'], 1, 5, 3, key=f"adapt_{name}")
+                ans['autonomia'] = st.slider(t['q7'], 1, 5, 3, key=f"auto_{name}")
+                ans['gestao_equipa'] = st.slider(t['q8'], 1, 5, 3, key=f"gestao_{name}")
+                ans['operacionalizacao'] = st.slider(t['q9'], 1, 5, 3, key=f"opera_{name}")
+                ans['comunicacao_eficaz'] = st.slider(t['q10'], 1, 5, 3, key=f"eficaz_{name}")
+                ans['iniciativa'] = st.slider(t['q11'], 1, 5, 3, key=f"init_{name}")
+                ans['pontos_positivos'] = st.text_area(t['q12'], key=f"pos_{name}")
+                ans['pontos_melhoria'] = st.text_area(t['q13'], key=f"melhoria_{name}")
+                if st.form_submit_button(t['submit']):
+                    if not ans['pontos_positivos'].strip() or not ans['pontos_melhoria'].strip():
+                        st.error(t['fill_required'])
+                    else:
+                        save_evaluation_db(
+                            st.session_state.evaluator_name,
+                            st.session_state.evaluator_position,
+                            name,
+                            ans
+                        )
+                        st.session_state.avaliacoes[name] = ans
+                        st.session_state.current_index += 1
+                        st.success(t['evaluation_success'])
         else:
-            evaluator_name = st.session_state.evaluator_name
-            evaluator_position = st.session_state.evaluator_position
-            df_to_evaluate = st.session_state.df_to_evaluate
-            total_avaliacoes = len(df_to_evaluate)
-            st.markdown(f"**{t['you_selected']}** {evaluator_name} - {evaluator_position}")
-            st.markdown(f"**{t['total_to_evaluate']}** {total_avaliacoes}")
-            
-            if st.session_state.current_index < total_avaliacoes:
-                current_row = df_to_evaluate.iloc[st.session_state.current_index]
-                evaluated_name = current_row["name"]
-                st.markdown("---")
-                st.subheader(f"{t['evaluating']} {evaluated_name} - {current_row['position']}")
-                with st.form(key=f"avaliacao_{evaluated_name}"):
-                    st.markdown(f"**{t['questions']}**")
-                    resposta = {}
-                    resposta["recomendacao"] = st.slider(
-                        t["q1"],
-                        min_value=0, max_value=10, value=5, key=f"recomendacao_{evaluated_name}"
-                    )
-                    resposta["qualidade"] = st.radio(
-                        t["q2"],
-                        options=["Excelente", "Muito Bom", "Bom", "Regular", "Ruim"],
-                        key=f"qualidade_{evaluated_name}"
-                    )
-                    resposta["produtividade"] = st.slider(
-                        t["q3"],
-                        min_value=1, max_value=5, value=3, key=f"produtividade_{evaluated_name}"
-                    )
-                    resposta["trabalho_em_equipe"] = st.radio(
-                        t["q4"],
-                        options=["Excelente", "Muito Bom", "Bom", "Regular", "Ruim"],
-                        key=f"trabalho_em_equipe_{evaluated_name}"
-                    )
-                    resposta["proatividade"] = st.slider(
-                        t["q5"],
-                        min_value=1, max_value=5, value=3, key=f"proatividade_{evaluated_name}"
-                    )
-                    resposta["resolucao"] = st.radio(
-                        t["q6"],
-                        options=["Excelente", "Muito Bem", "Bem", "Regular", "Ruim"],
-                        key=f"resolucao_{evaluated_name}"
-                    )
-                    resposta["criticas"] = st.slider(
-                        t["q7"],
-                        min_value=1, max_value=5, value=3, key=f"criticas_{evaluated_name}"
-                    )
-                    resposta["adaptabilidade"] = st.radio(
-                        t["q8"],
-                        options=["Excelente", "Muito Bem", "Bem", "Regular", "Ruim"],
-                        key=f"adaptabilidade_{evaluated_name}"
-                    )
-                    resposta["pontos_positivos"] = st.text_area(
-                        t["q9"],
-                        key=f"pontos_positivos_{evaluated_name}"
-                    )
-                    resposta["pontos_melhoria"] = st.text_area(
-                        t["q10"],
-                        key=f"pontos_melhoria_{evaluated_name}"
-                    )
-                    # Novas questões
-                    resposta["comunicacao"] = st.slider(
-                        t["q11"],
-                        min_value=1, max_value=5, value=3, key=f"comunicacao_{evaluated_name}"
-                    )
-                    resposta["iniciativa"] = st.slider(
-                        t["q12"],
-                        min_value=1, max_value=5, value=3, key=f"iniciativa_{evaluated_name}"
-                    )
-                    
-                    submit = st.form_submit_button(t["submit"])
-                    if submit:
-                        if not resposta["pontos_positivos"].strip() or not resposta["pontos_melhoria"].strip():
-                            st.error(t["fill_required"])
-                        else:
-                            evaluation_record = {"evaluated": evaluated_name, **resposta}
-                            from components import save_evaluation_db
-                            save_evaluation_db(
-                                evaluator=st.session_state.evaluator_name,
-                                evaluator_position=st.session_state.evaluator_position,
-                                evaluated=evaluated_name,
-                                evaluation_data=evaluation_record
-                            )
-                            st.session_state.avaliacoes[evaluated_name] = resposta
-                            st.session_state.current_index += 1
-                            st.success(t["evaluation_success"])
-            else:
-                st.success("Você completou todas as avaliações!")
-                st.markdown("### Resumo das Avaliações Realizadas")
-                for _, row in df_to_evaluate.iterrows():
-                    evaluated_name = row["name"]
-                    if evaluated_name in st.session_state.avaliacoes:
-                        avaliacao = st.session_state.avaliacoes[evaluated_name]
-                        st.markdown(f"#### {row['name']} - {row['position']}")
-                        st.write(f"**1. Recomendação (0 a 10):** {avaliacao['recomendacao']}")
-                        st.write(f"**2. Qualidade do trabalho:** {avaliacao['qualidade']}")
-                        st.write(f"**3. Produtividade (1 a 5):** {avaliacao['produtividade']}")
-                        st.write(f"**4. Trabalho em equipe:** {avaliacao['trabalho_em_equipe']}")
-                        st.write(f"**5. Proatividade (1 a 5):** {avaliacao['proatividade']}")
-                        st.write(f"**6. Resolução de problemas:** {avaliacao['resolucao']}")
-                        st.write(f"**7. Lidar com críticas (1 a 5):** {avaliacao['criticas']}")
-                        st.write(f"**8. Adaptação:** {avaliacao['adaptabilidade']}")
-                        st.write(f"**9. Pontos Positivos:** {avaliacao['pontos_positivos']}")
-                        st.write(f"**10. Áreas para Melhoria:** {avaliacao['pontos_melhoria']}")
-                        st.write(f"**11. Comunicação:** {avaliacao['comunicacao']}")
-                        st.write(f"**12. Iniciativa:** {avaliacao['iniciativa']}")
+            st.success("Você completou todas as avaliações!")
+            st.markdown("### Resumo das Avaliações Realizadas")
+            for r in df2.itertuples():
+                n = r.name
+                if n in st.session_state.avaliacoes:
+                    a = st.session_state.avaliacoes[n]
+                    st.markdown(f"#### {n} - {r.position}")
+                    for k, v in a.items():
+                        st.write(f"**{k}:** {v}")

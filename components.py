@@ -8,6 +8,7 @@ from datetime import datetime
 
 DB_FILE = "evaluations.db"
 
+
 def create_db():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -33,7 +34,9 @@ def create_db():
     conn.commit()
     conn.close()
 
+
 create_db()
+
 
 def inject_light_theme():
     light_css = """
@@ -66,6 +69,7 @@ def inject_light_theme():
     </style>
     """
     st.markdown(light_css, unsafe_allow_html=True)
+
 
 def inject_dark_theme():
     dark_css = """
@@ -117,6 +121,7 @@ def load_sidebar_logo(path="acted.png", width=200):
             unsafe_allow_html=True
         )
 
+
 def to_excel(df: pd.DataFrame) -> bytes:
     output = BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
@@ -139,6 +144,7 @@ def get_employees_data() -> pd.DataFrame:
         st.error("Arquivo 'employees.csv' não encontrado. Coloque o arquivo na pasta do app.")
         return pd.DataFrame([])
 
+
 def init_session_state():
     if "current_index" not in st.session_state:
         st.session_state.current_index = 0
@@ -148,6 +154,7 @@ def init_session_state():
         st.session_state.evaluator_selected = None
     if "evaluator_record" not in st.session_state:
         st.session_state.evaluator_record = None
+
 
 def save_evaluation_db(evaluator, evaluator_position, evaluated, evaluation_data):
     """
@@ -179,11 +186,13 @@ def save_evaluation_db(evaluator, evaluator_position, evaluated, evaluation_data
     conn.commit()
     conn.close()
 
+
 def get_evaluations_db() -> pd.DataFrame:
     conn = sqlite3.connect(DB_FILE)
     df = pd.read_sql_query("SELECT * FROM evaluations", conn)
     conn.close()
     return df
+
 
 def clear_responses():
     """Remove os dados do banco de dados (para testes)"""

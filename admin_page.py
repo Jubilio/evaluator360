@@ -3,6 +3,7 @@ import pandas as pd
 import altair as alt
 from components import to_excel, clear_responses, get_evaluations_db
 
+
 def suggest_mentors(variable: str, responses_df: pd.DataFrame, top_n: int = 3):
     """
     Agrupa as avaliações por 'evaluated' e calcula a média da variável selecionada.
@@ -20,21 +21,18 @@ def suggest_mentors(variable: str, responses_df: pd.DataFrame, top_n: int = 3):
         suggestions[evaluated] = mentors
     return suggestions, overall_avg
 
+
 def admin_page():
     st.title("Dashboard Administrativo")
     st.markdown("Esta página é restrita. Informe a senha de acesso.")
-    
     admin_password = st.text_input("Senha de Admin", type="password", key="admin_password")
     if admin_password != "admin123":
         st.error("Senha incorreta!")
         st.stop()
-    
     st.success("Acesso permitido!")
-    
     # Exibe informações do avaliador, se disponíveis
     if "evaluator_name" in st.session_state and "evaluator_position" in st.session_state:
         st.markdown(f"### Avaliações realizadas por: **{st.session_state.evaluator_name} - {st.session_state.evaluator_position}**")
-    
     # Botão para limpar os dados (para testes)
     if st.button("Remover dados de teste"):
         clear_responses()
