@@ -1,18 +1,18 @@
 import streamlit as st
 import pandas as pd
-from io import BytesIO
-import os
 import sqlite3
+import os
+from io import BytesIO
 from datetime import datetime
 
 DB_FILE = "evaluations.db"
 
 
 def create_db():
+    """Garante criação da tabela sem apagar dados existentes."""
     conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    # Tabela com os novos campos de avaliação
-    cursor.execute("""
+    cur = conn.cursor()
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS evaluations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             evaluator TEXT,
@@ -30,7 +30,6 @@ def create_db():
             comunicacao_eficaz INTEGER,
             tarefa_atempada INTEGER,
             qualidade_resultados INTEGER,
-            iniciativa INTEGER,
             pontos_positivos TEXT,
             pontos_melhoria TEXT,
             timestamp TEXT
@@ -39,8 +38,7 @@ def create_db():
     conn.commit()
     conn.close()
 
-# Criação inicial da base
-create_db()
+# Cria a tabela (sem apagar dados) ao importar o módulo\create_db()
 
 
 def inject_light_theme():
@@ -56,21 +54,10 @@ def inject_light_theme():
         color: black;
         font-family: 'Segoe UI', sans-serif;
     }
-    .block-container {
-        background-color: white;
-    }
-    h1, h2, h3, h4 {
-        color: var(--secondary-color-2);
-    }
-    .stButton>button {
-        background-color: var(--primary-color);
-        color: white;
-        border: none;
-    }
-    .sidebar .sidebar-content {
-        background-color: var(--secondary-color-1);
-        color: white;
-    }
+    .block-container { background-color: white; }
+    h1, h2, h3, h4 { color: var(--secondary-color-2); }
+    .stButton>button { background-color: var(--primary-color); color: white; border: none; }
+    .sidebar .sidebar-content { background-color: var(--secondary-color-1); color: white; }
     </style>
     """
     st.markdown(light_css, unsafe_allow_html=True)
@@ -84,34 +71,13 @@ def inject_dark_theme():
         --secondary-color-1: #545454;
         --secondary-color-2: #1b1464;
     }
-    body {
-        background-color: #333333 !important;
-        color: white;
-        font-family: 'Segoe UI', sans-serif;
-    }
-    .block-container {
-        background-color: #444444;
-    }
-    h1, h2, h3, h4 {
-        color: var(--primary-color);
-    }
-    .stButton>button {
-        background-color: var(--primary-color);
-        color: white;
-        border: none;
-    }
-    .stTextInput>div>input {
-        border: 2px solid var(--primary-color);
-        background-color: #555555;
-        color: white;
-    }
-    .sidebar .sidebar-content {
-        background-color: #222222;
-        color: white;
-    }
-    .sidebar .sidebar-content a {
-        color: white;
-    }
+    body { background-color: #333333 !important; color: white; font-family: 'Segoe UI', sans-serif; }
+    .block-container { background-color: #444444; }
+    h1, h2, h3, h4 { color: var(--primary-color); }
+    .stButton>button { background-color: var(--primary-color); color: white; border: none; }
+    .stTextInput>div>input { border: 2px solid var(--primary-color); background-color: #555555; color: white; }
+    .sidebar .sidebar-content { background-color: #222222; color: white; }
+    .sidebar .sidebar-content a { color: white; }
     </style>
     """
     st.markdown(dark_css, unsafe_allow_html=True)
@@ -127,15 +93,25 @@ def load_sidebar_logo(path="acted.png", width=200):
         )
 
 
+def init_session_state():
+    defaults = {
+        "current_index": 0,
+        "avaliacoes": {},
+        "evaluator_selected": None,
+        "evaluator_record": None
+    }
+    for key, val in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = val
+
+
 def to_excel(df: pd.DataFrame) -> bytes:
     output = BytesIO()
-    writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    df.to_excel(writer, index=False, sheet_name='Avaliações')
-    writer.close()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Avaliações')
     return output.getvalue()
 
 
-@st.cache_data
 def get_employees_data() -> pd.DataFrame:
     csv_path = "employees.csv"
     if os.path.exists(csv_path):
@@ -145,67 +121,46 @@ def get_employees_data() -> pd.DataFrame:
             return df
         except Exception as e:
             st.error(f"Erro ao carregar o CSV: {e}")
-            return pd.DataFrame([])
     else:
         st.error("Arquivo 'employees.csv' não encontrado. Coloque o arquivo na pasta do app.")
-        return pd.DataFrame([])
+    return pd.DataFrame([])
 
 
-def init_session_state():
-    if "current_index" not in st.session_state:
-        st.session_state.current_index = 0
-    if "avaliacoes" not in st.session_state:
-        st.session_state.avaliacoes = {}
-    if "evaluator_selected" not in st.session_state:
-        st.session_state.evaluator_selected = None
-    if "evaluator_record" not in st.session_state:
-        st.session_state.evaluator_record = None
-
-
-def save_evaluation_db(evaluator, evaluator_position, evaluated, evaluation_data):
-    """
-    Salva os dados da avaliação no banco de dados SQLite, incluindo os novos campos.
-    """
+def save_evaluation_db(evaluator, evaluator_position, evaluated, e: dict):
     conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    # Extrai todos os campos
-    params = (
+    cur = conn.cursor()
+    vals = [
         evaluator,
         evaluator_position,
         evaluated,
-        evaluation_data.get('recomendacao'),
-        evaluation_data.get('qualidade'),
-        evaluation_data.get('produtividade'),
-        evaluation_data.get('trabalho_em_equipe'),
-        evaluation_data.get('proatividade'),
-        evaluation_data.get('adaptabilidade'),
-        evaluation_data.get('autonomia'),
-        evaluation_data.get('gestao_equipa'),
-        evaluation_data.get('operacionalizacao'),
-        evaluation_data.get('comunicacao_eficaz'),
-        evaluation_data.get('tarefa_atempada'),
-        evaluation_data.get('qualidade_resultados'),
-        evaluation_data.get('iniciativa'),
-        evaluation_data.get('pontos_positivos'),
-        evaluation_data.get('pontos_melhoria'),
+        e.get('recomendacao'),
+        e.get('qualidade'),
+        e.get('produtividade'),
+        e.get('trabalho_em_equipe'),
+        e.get('proatividade'),
+        e.get('adaptabilidade'),
+        e.get('autonomia'),
+        e.get('gestao_equipa'),
+        e.get('operacionalizacao'),
+        e.get('comunicacao_eficaz'),
+        e.get('tarefa_atempada'),
+        e.get('qualidade_resultados'),
+        e.get('pontos_positivos'),
+        e.get('pontos_melhoria'),
         datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ]
+    placeholders = ",".join(["?" for _ in vals])
+    cur.execute(
+        f"INSERT INTO evaluations (evaluator, evaluator_position, evaluated, recomendacao, qualidade, produtividade, trabalho_em_equipe, proatividade, adaptabilidade, autonomia, gestao_equipa, operacionalizacao, comunicacao_eficaz, tarefa_atempada, qualidade_resultados, pontos_positivos, pontos_melhoria, timestamp) VALUES ({placeholders})",
+        vals
     )
-    cursor.execute("""
-        INSERT INTO evaluations (
-            evaluator, evaluator_position, evaluated,
-            recomendacao, qualidade, produtividade,
-            trabalho_em_equipe, proatividade,
-            adaptabilidade, autonomia, gestao_equipa,
-            operacionalizacao, comunicacao_eficaz,
-            tarefa_atempada, qualidade_resultados, iniciativa,
-            pontos_positivos, pontos_melhoria, timestamp
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, params)
     conn.commit()
     conn.close()
 
 
 def get_evaluations_db() -> pd.DataFrame:
+    if not os.path.exists(DB_FILE):
+        create_db()
     conn = sqlite3.connect(DB_FILE)
     df = pd.read_sql_query("SELECT * FROM evaluations", conn)
     conn.close()
@@ -213,9 +168,8 @@ def get_evaluations_db() -> pd.DataFrame:
 
 
 def clear_responses():
-    """Remove os dados do banco de dados (para testes)"""
     conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM evaluations")
+    cur = conn.cursor()
+    cur.execute("DELETE FROM evaluations")
     conn.commit()
     conn.close()

@@ -1,34 +1,34 @@
 import streamlit as st
+import streamlit.components.v1 as components
 from components import get_employees_data, save_evaluation_db
 
-# Dicionário com textos para cada idioma
+# Textos multilíngues
 texts = {
     "Português": {
         "intro": """
 **Por favor, dedique alguns minutos para preencher este inquérito**
 
 Esta é uma ferramenta essencial para fortalecer o desempenho individual e da equipa, promovendo um ambiente colaborativo e eficiente. Por meio do feedback dos colegas, identificamos pontos de melhoria, valorizamos contribuições e estimulamos o desenvolvimento profissional. Pedimos que as respostas sejam sinceras, imparciais e focadas no crescimento coletivo. Todas as informações serão tratadas com confidencialidade e utilizadas para aprimorar continuamente o nosso trabalho.
-        """,
+""",
         "instructions": """
 ### Instruções
-**Passos:**
 1. Digite parte do seu nome e selecione o resultado correto.
-2. Se você tiver pelo menos 3 meses de trabalho, avalie cada colega (exceto você mesmo) respondendo às perguntas numeradas.
+2. Se você tiver pelo menos 1 meses de trabalho, avalie cada colega (exceto você mesmo).
 
-**Observações:**
-- Funcionários com menos de 3 meses **não podem realizar a avaliação**.
-- Se você for **Distribution Project Officer**, não poderá avaliar funcionários na posição **MEAL Officer** e vice-versa.
-        """,
-        "name_input": "Seu nome (busca parcial):",
+""",
+        "name_input": "Digite seu nome:",
         "confirm": "Confirmar",
-        "no_match": "Nenhum nome correspondente. Verifique a grafia e tente novamente.",
-        "not_eligible": "Não pode realizar a avaliação devido ao tempo de trabalho com os colegas.",
-        "evaluator_defined": "Avaliador definido. Prossiga para as avaliações.",
+        "no_match": "Nenhum nome correspondente.",
+        "not_eligible": "Você não é elegível para avaliar.",
+        "evaluator_defined": "Avaliador definido! Iniciando avaliações...",
         "you_selected": "Você selecionou:",
-        "total_to_evaluate": "Total de colegas a avaliar:",
+        "total_to_evaluate": "Colegas a avaliar:",
         "evaluating": "Avaliando:",
-        "questions": "Perguntas:",
-        # Questões da avaliação
+        "submit": "Próximo",
+        "send": "Enviar",
+        "fill_required": "Por favor, responda todas as perguntas obrigatórias.",
+        "success": "Avaliação registrada com sucesso!",
+        # Perguntas
         "q1": "1. Qual é a probabilidade de recomendar esse(a) colega para uma atividade específica? (0 a 10)",
         "q2": "2. Quão boa é a qualidade do trabalho deste colega?",
         "q3": "3. Quão produtivo é este(a) colega de trabalho? (1 a 5)",
@@ -45,36 +45,34 @@ Esta é uma ferramenta essencial para fortalecer o desempenho individual e da eq
         "q12": "12. Como avalia a qualidade dos resultados das tarefas executadas pelo(a) colega de uma forma geral?",
         # Questões abertas (mantêm-se por último)
         "q13": "13. Liste as áreas em que este(a) colega apresenta bom desempenho. Seja específico.",
-        "q14": "14. Liste as áreas que podem ser melhoradas para este(a) colega. Seja específico.",
-        "submit": "Next / Próximo",
-        "fill_required": "Por favor, responda todas as perguntas obrigatórias.",
-        "evaluation_success": "Avaliação registrada!"
+        "q14": "14. Liste as áreas que podem ser melhoradas para este(a) colega. Seja específico."
     },
     "English": {
         "intro": """
 **Please take a few minutes to complete this survey**
 
 This tool is essential to strengthen individual and team performance, fostering a collaborative and efficient work environment. Through colleague feedback, we identify areas for improvement, value contributions, and encourage professional development. We ask that responses be honest, impartial, and focused on collective growth. All information will be kept confidential and used to continuously improve our work.
-        """,
+""",
         "instructions": """
 ### Instructions
-**Steps:**
 1. Type part of your name and select the correct match.
-2. If you have been working for at least 3 months, evaluate each colleague (except yourself) by answering the numbered questions.
+2. If you have been working for at least 3 months, evaluate each colleague (except yourself).
 
-**Notes:**
-- Employees with less than 3 months of work **cannot perform the evaluation**.
-- If you are a **Distribution Project Officer**, you cannot evaluate colleagues with the position **MEAL Officer**, and vice versa.
-        """,
-        "name_input": "Your name (partial search):",
+
+""",
+        "name_input": "Enter your name:",
         "confirm": "Confirm",
-        "no_match": "No matching name found. Check the spelling and try again.",
-        "not_eligible": "You are not eligible to perform the evaluation due to your work duration with colleagues.",
-        "evaluator_defined": "Evaluator defined. Proceed to evaluations.",
+        "no_match": "No matching name found.",
+        "not_eligible": "You are not eligible to evaluate.",
+        "evaluator_defined": "Evaluator defined! Starting evaluations...",
         "you_selected": "You selected:",
-        "total_to_evaluate": "Total colleagues to evaluate:",
+        "total_to_evaluate": "Colleagues to evaluate:",
         "evaluating": "Evaluating:",
-        "questions": "Questions:",
+        "submit": "Next",
+        "send": "Submit",
+        "fill_required": "Please answer all required questions.",
+        "success": "Evaluation recorded successfully!",
+        # Questions
         "q1": "1. How likely are you to recommend this colleague for a specific activity? (0 to 10)",
         "q2": "2. How good is the quality of this colleague's work?",
         "q3": "3. How productive is this colleague? (1 to 5)",
@@ -88,104 +86,124 @@ This tool is essential to strengthen individual and team performance, fostering 
         "q11": "11. On a scale from 1 to 10, how do you rate this colleague's ability to perform daily tasks assigned to them in a timely manner?",
         "q12": "12. How do you assess the quality of the results of tasks performed by the colleague in general?",
         "q13": "13. List the areas in which this colleague performs well. Be specific.",
-        "q14": "14. List the areas that could be improved for this colleague. Be specific.",
-        "submit": "Next / Next",
-        "fill_required": "Please answer all required questions.",
-        "evaluation_success": "Evaluation recorded!"
+        "q14": "14. List the areas that could be improved for this colleague. Be specific."
     }
 }
 
-def evaluation_page():
-    language = st.session_state.get("language", "Português")
-    t = texts[language]
 
-    st.title("Avaliação 360°")
-    st.markdown(t["intro"])
-    st.markdown(t["instructions"])
+def evaluation_page():
+    # Seleciona textos pelo idioma
+    lang = st.session_state.get("language", "Português")
+    base = texts["Português"]
+    t0 = texts.get(lang, {})
+    
+    def tt(key):
+        return t0.get(key, base.get(key, ""))
+
+    # Inicializa estado
+    if "step" not in st.session_state:
+        st.session_state.step = "intro"
+        st.session_state.evaluator = None
+        st.session_state.pool = None
+        st.session_state.index = 0
+        st.session_state.answers = {}
 
     df = get_employees_data()
     if df.empty:
-        st.stop()
+        st.error(tt("no_match"))
+        return
 
-    if st.session_state.get("evaluator_selected") is None:
-        st.subheader(t["name_input"])
-        typed_name = st.text_input(t["name_input"], key="typed_name")
-        matching = [n for n in df["name"].unique() if typed_name.lower() in n.lower()] if typed_name.strip() else []
-        selected = st.selectbox("", matching, key="selected_name") if matching else None
-        if st.button(t["confirm"]):
+    # Passo 1: Seleção de avaliador
+    if st.session_state.step == "intro":
+        st.title("Avaliação 360°")
+        st.markdown(tt("intro"))
+        st.markdown(tt("instructions"))
+        name_input = st.text_input(tt("name_input"), key="typed_name")
+        matches = [n for n in df["name"] if name_input.lower() in n.lower()] if name_input else []
+        selected = st.selectbox(tt("name_input"), matches, key="selected_name") if matches else None
+        if st.button(tt("confirm")):
             if not selected:
-                st.error(t["no_match"])
+                st.error(tt("no_match"))
             else:
                 rec = df[df["name"] == selected].iloc[0]
-                st.session_state.evaluator_record = rec
-                st.session_state.evaluator_name = rec["name"]
-                st.session_state.evaluator_position = rec["position"]
-                st.session_state.evaluator_selected = True
-                if rec["months"] < 2:
-                    st.error(t["not_eligible"])
+                if rec["months"] < 3:
+                    st.error(tt("not_eligible"))
                 else:
-                    ev = rec["position"].strip().lower()
-                    de = df[df["name"] != rec["name"]].copy()
-                    de["pos_clean"] = de["position"].str.strip().str.lower()
-                    if ev == "distribution project officer":
-                        de = de[de["pos_clean"] != "meal officer"]
-                    elif ev == "meal officer":
-                        de = de[de["pos_clean"] != "distribution project officer"]
-                    de = de[de["months"] >= 3].reset_index(drop=True)
-                    st.session_state.df_to_evaluate = de
-                    st.session_state.current_index = 0
-                    st.success(t["evaluator_defined"])
+                    pool = df[df["name"] != selected].copy()
+                    pos = rec["position"].strip().lower()
+                    if pos == "distribution project officer":
+                        pool = pool[pool["position"].str.lower() != "meal officer"]
+                    elif pos == "meal officer":
+                        pool = pool[pool["position"].str.lower() != "distribution project officer"]
+                    pool = pool[pool["months"] >= 3].reset_index(drop=True)
+                    st.session_state.evaluator = rec
+                    st.session_state.pool = pool
+                    st.session_state.step = "questions"
+                    st.success(tt("evaluator_defined"))
+        return
 
-    if st.session_state.get("evaluator_selected"):
-        rec = st.session_state.evaluator_record
-        if rec["months"] < 2:
-            st.error(t["not_eligible"])
-            return
-        df2 = st.session_state.df_to_evaluate
-        st.markdown(f"**{t['you_selected']}** {st.session_state.evaluator_name} - {st.session_state.evaluator_position}")
-        st.markdown(f"**{t['total_to_evaluate']}** {len(df2)}")
-        idx = st.session_state.current_index
-        if idx < len(df2):
-            row = df2.iloc[idx]
-            name = row["name"]
-            st.markdown("---")
-            st.subheader(f"{t['evaluating']} {name} - {row['position']}")
-            with st.form(key=f"form_{name}"):
-                ans = {}
-                ans['recomendacao'] = st.slider(t['q1'], 0, 10, 5, key=f"rec_{name}")
-                ans['qualidade'] = st.radio(t['q2'], ["Excelente","Muito Bom","Bom","Regular","Ruim"], key=f"qual_{name}")
-                ans['produtividade'] = st.slider(t['q3'], 1, 5, 3, key=f"prod_{name}")
-                ans['trabalho_equipa'] = st.radio(t['q4'], ["Excelente","Muito Bom","Bom","Regular","Ruim"], key=f"team_{name}")
-                ans['proatividade'] = st.slider(t['q5'], 1, 5, 3, key=f"proativo_{name}")
-                ans['adaptabilidade'] = st.slider(t['q6'], 1, 5, 3, key=f"adapt_{name}")
-                ans['autonomia'] = st.slider(t['q7'], 1, 5, 3, key=f"auto_{name}")
-                ans['gestao_equipa'] = st.slider(t['q8'], 1, 5, 3, key=f"gestao_{name}")
-                ans['operacionalizacao'] = st.slider(t['q9'], 1, 5, 3, key=f"opera_{name}")
-                ans['comunicacao_eficaz'] = st.slider(t['q10'], 1, 5, 3, key=f"eficaz_{name}")
-                ans['tarefa_atempada'] = st.slider(t['q11'], 1, 10, 5, key=f"time_{name}")
-                ans['qualidade_resultados'] = st.slider(t['q12'], 1, 5, 3, key=f"resul_{name}")
-                ans['pontos_positivos'] = st.text_area(t['q13'], key=f"pos_{name}")
-                ans['pontos_melhoria'] = st.text_area(t['q14'], key=f"melhoria_{name}")
-                if st.form_submit_button(t['submit']):
-                    if not ans['pontos_positivos'].strip() or not ans['pontos_melhoria'].strip():
-                        st.error(t['fill_required'])
-                    else:
-                        save_evaluation_db(
-                            st.session_state.evaluator_name,
-                            st.session_state.evaluator_position,
-                            name,
-                            ans
-                        )
-                        st.session_state.avaliacoes[name] = ans
-                        st.session_state.current_index += 1
-                        st.success(t['evaluation_success'])
-        else:
-            st.success("Você completou todas as avaliações!")
-            st.markdown("### Resumo das Avaliações Realizadas")
-            for r in df2.itertuples():
-                n = r.name
-                if n in st.session_state.avaliacoes:
-                    a = st.session_state.avaliacoes[n]
-                    st.markdown(f"#### {n} - {r.position}")
-                    for k, v in a.items():
-                        st.write(f"**{k}:** {v}")
+    # Passo 2: Perguntas sequenciais
+    components.html('<script>window.scrollTo(0,0);</script>', height=0)
+    rec = st.session_state.evaluator
+    pool = st.session_state.pool
+    idx = st.session_state.index
+
+    st.title(f"{tt('you_selected')} {rec['name']} - {rec['position']}")
+    st.markdown(f"**{tt('total_to_evaluate')}** {len(pool)}")
+
+    if idx < len(pool):
+        person = pool.iloc[idx]
+        st.subheader(f"{tt('evaluating')} {person['name']} - {person['position']}")
+        with st.form(key=f"form_{idx}", clear_on_submit=True):
+            a1 = st.slider(tt('q1'), 0, 10, 5)
+            a2 = st.radio(tt('q2'), ["Excelente","Muito Bom","Bom","Regular","Ruim"])
+            a3 = st.slider(tt('q3'), 1, 5, 3)
+            a4 = st.radio(tt('q4'), ["Excelente","Muito Bom","Bom","Regular","Ruim"])
+            a5 = st.slider(tt('q5'), 1, 5, 3)
+            a6 = st.slider(tt('q6'), 1, 5, 3)
+            a7 = st.slider(tt('q7'), 1, 5, 3)
+            a8 = st.slider(tt('q8'), 1, 5, 3)
+            a9 = st.slider(tt('q9'), 1, 5, 3)
+            a10 = st.slider(tt('q10'), 1, 5, 3)
+            a11 = st.slider(tt('q11'), 1, 10, 5)
+            a12 = st.slider(tt('q12'), 1, 5, 3)
+            p13 = st.text_area(tt('q13'))
+            p14 = st.text_area(tt('q14'))
+            label = tt('submit') if idx < len(pool) - 1 else (tt('send') or tt('submit'))
+            submitted = st.form_submit_button(label)
+
+        if submitted:
+            missing = []
+            for key, val in [('q1',a1),('q2',a2),('q3',a3),('q4',a4),('q5',a5),('q6',a6),('q7',a7),('q8',a8),('q9',a9),('q10',a10),('q11',a11),('q12',a12)]:
+                if val is None or (isinstance(val,str) and not val.strip()):
+                    missing.append(key)
+            if not p13.strip(): missing.append('q13')
+            if not p14.strip(): missing.append('q14')
+            if missing:
+                st.error(tt('fill_required'))
+            else:
+                st.session_state.answers[person['name']] = {
+                    'recomendacao': a1,
+                    'qualidade': a2,
+                    'produtividade': a3,
+                    'trabalho_em_equipe': a4,
+                    'proatividade': a5,
+                    'adaptabilidade': a6,
+                    'autonomia': a7,
+                    'gestao_equipa': a8,
+                    'operacionalizacao': a9,
+                    'comunicacao_eficaz': a10,
+                    'tarefa_atempada': a11,
+                    'qualidade_resultados': a12,
+                    'pontos_positivos': p13.strip(),
+                    'pontos_melhoria': p14.strip()
+                }
+                st.session_state.index += 1
+                if idx == len(pool) - 1:
+                    for name_eval, resp in st.session_state.answers.items():
+                        save_evaluation_db(rec['name'], rec['position'], name_eval, resp)
+                    st.success(tt('success'))
+        return
+    else:
+        st.info("Nenhum colega para avaliar.")
+        return
