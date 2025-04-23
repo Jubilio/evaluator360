@@ -8,8 +8,6 @@ texts = {
 **Por favor, dedique alguns minutos para preencher este inquérito**
 
 Esta é uma ferramenta essencial para fortalecer o desempenho individual e da equipa, promovendo um ambiente colaborativo e eficiente. Por meio do feedback dos colegas, identificamos pontos de melhoria, valorizamos contribuições e estimulamos o desenvolvimento profissional. Pedimos que as respostas sejam sinceras, imparciais e focadas no crescimento coletivo. Todas as informações serão tratadas com confidencialidade e utilizadas para aprimorar continuamente o nosso trabalho.
-
-Esta é uma ferramenta chave para fortalecer o desempenho individual e da equipe, promovendo um ambiente colaborativo e eficiente.
         """,
         "instructions": """
 ### Instruções
@@ -36,16 +34,18 @@ Esta é uma ferramenta chave para fortalecer o desempenho individual e da equipe
         "q3": "3. Quão produtivo é este(a) colega de trabalho? (1 a 5)",
         "q4": "4. Quão bem trabalha esse(a) colega com os(as) outros(as)?",
         "q5": "5. Quão proativo(a) é este(a) colega? (1 a 5)",
-        # Substituídas por novas descrições
+        # Novas variáveis substitutas
         "q6": "6. Adaptabilidade: Como avalia a capacidade deste(a) colega para se adaptar a mudanças, imprevistos ou novos contextos de trabalho? (1 a 5)",
         "q7": "7. Autonomia: Em que medida este(a) colega demonstra iniciativa e capacidade para trabalhar de forma autónoma, sem necessidade de supervisão constante? (1 a 5)",
         "q8": "8. Trabalho em equipa e gestão de equipa: Como descreve a capacidade deste(a) colega para colaborar com colegas e, se aplicável, liderar e motivar a sua equipa? (1 a 5)",
         "q9": "9. Operacionalização: Este(a) colega consegue transformar planos e orientações em ações concretas de forma eficiente? (1 a 5)",
         "q10": "10. Comunicação eficaz: Em que medida este(a) colega comunica de forma clara, respeitosa e apropriada com colegas, parceiros e outras partes interessadas? (1 a 5)",
-        # Mantém iniciativa como questão adicional
-        "q11": "11. Como você avalia a iniciativa deste colega para propor melhorias? (1 a 5)",
-        "q12": "12. Liste as áreas em que este(a) colega apresenta bom desempenho. Seja específico.",
-        "q13": "13. Liste as áreas que podem ser melhoradas para este(a) colega. Seja específico.",
+        # Questões adicionais solicitadas
+        "q11": "11. De 1 a 10, como avalia a capacidade do(a) colega em desempenhar de forma atempada as tarefas diárias a ele(a) atribuídas?",
+        "q12": "12. Como avalia a qualidade dos resultados das tarefas executadas pelo(a) colega de uma forma geral?",
+        # Questões abertas (mantêm-se por último)
+        "q13": "13. Liste as áreas em que este(a) colega apresenta bom desempenho. Seja específico.",
+        "q14": "14. Liste as áreas que podem ser melhoradas para este(a) colega. Seja específico.",
         "submit": "Next / Próximo",
         "fill_required": "Por favor, responda todas as perguntas obrigatórias.",
         "evaluation_success": "Avaliação registrada!"
@@ -70,27 +70,25 @@ This tool is essential to strengthen individual and team performance, fostering 
         "confirm": "Confirm",
         "no_match": "No matching name found. Check the spelling and try again.",
         "not_eligible": "You are not eligible to perform the evaluation due to your work duration with colleagues.",
-        "evaluator_defined": "Evaluator defined. Proceed with the evaluations.",
+        "evaluator_defined": "Evaluator defined. Proceed to evaluations.",
         "you_selected": "You selected:",
         "total_to_evaluate": "Total colleagues to evaluate:",
         "evaluating": "Evaluating:",
         "questions": "Questions:",
-        # Questions
         "q1": "1. How likely are you to recommend this colleague for a specific activity? (0 to 10)",
         "q2": "2. How good is the quality of this colleague's work?",
         "q3": "3. How productive is this colleague? (1 to 5)",
         "q4": "4. How well does this colleague work with others?",
         "q5": "5. How proactive is this colleague? (1 to 5)",
-        # New descriptive variables
         "q6": "6. Adaptability: How do you rate this colleague's ability to adapt to changes, unexpected events or new work contexts? (1 to 5)",
         "q7": "7. Autonomy: To what extent does this colleague demonstrate initiative and capability to work independently without constant supervision? (1 to 5)",
         "q8": "8. Teamwork and team management: How would you describe this colleague's ability to collaborate with coworkers and, when applicable, lead and motivate their team? (1 to 5)",
         "q9": "9. Operationalization: Does this colleague effectively turn plans and guidelines into concrete actions efficiently? (1 to 5)",
         "q10": "10. Effective communication: To what extent does this colleague communicate clearly, respectfully and appropriately with colleagues, partners and other stakeholders? (1 to 5)",
-        # Additional initiative question
-        "q11": "11. How would you rate this colleague's initiative in proposing improvements? (1 to 5)",
-        "q12": "12. List the areas in which this colleague performs well. Be specific.",
-        "q13": "13. List the areas that could be improved for this colleague. Be specific.",
+        "q11": "11. On a scale from 1 to 10, how do you rate this colleague's ability to perform daily tasks assigned to them in a timely manner?",
+        "q12": "12. How do you assess the quality of the results of tasks performed by the colleague in general?",
+        "q13": "13. List the areas in which this colleague performs well. Be specific.",
+        "q14": "14. List the areas that could be improved for this colleague. Be specific.",
         "submit": "Next / Next",
         "fill_required": "Please answer all required questions.",
         "evaluation_success": "Evaluation recorded!"
@@ -133,11 +131,10 @@ def evaluation_page():
                         de = de[de["pos_clean"] != "meal officer"]
                     elif ev == "meal officer":
                         de = de[de["pos_clean"] != "distribution project officer"]
-                    de = de[de["months"] >= 2].reset_index(drop=True)
+                    de = de[de["months"] >= 3].reset_index(drop=True)
                     st.session_state.df_to_evaluate = de
                     st.session_state.current_index = 0
-                    st.success(t["evaluator_defined"]
-                    )
+                    st.success(t["evaluator_defined"])
 
     if st.session_state.get("evaluator_selected"):
         rec = st.session_state.evaluator_record
@@ -165,9 +162,10 @@ def evaluation_page():
                 ans['gestao_equipa'] = st.slider(t['q8'], 1, 5, 3, key=f"gestao_{name}")
                 ans['operacionalizacao'] = st.slider(t['q9'], 1, 5, 3, key=f"opera_{name}")
                 ans['comunicacao_eficaz'] = st.slider(t['q10'], 1, 5, 3, key=f"eficaz_{name}")
-                ans['iniciativa'] = st.slider(t['q11'], 1, 5, 3, key=f"init_{name}")
-                ans['pontos_positivos'] = st.text_area(t['q12'], key=f"pos_{name}")
-                ans['pontos_melhoria'] = st.text_area(t['q13'], key=f"melhoria_{name}")
+                ans['tarefa_atempada'] = st.slider(t['q11'], 1, 10, 5, key=f"time_{name}")
+                ans['qualidade_resultados'] = st.slider(t['q12'], 1, 5, 3, key=f"resul_{name}")
+                ans['pontos_positivos'] = st.text_area(t['q13'], key=f"pos_{name}")
+                ans['pontos_melhoria'] = st.text_area(t['q14'], key=f"melhoria_{name}")
                 if st.form_submit_button(t['submit']):
                     if not ans['pontos_positivos'].strip() or not ans['pontos_melhoria'].strip():
                         st.error(t['fill_required'])
